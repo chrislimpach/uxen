@@ -192,6 +192,8 @@ guest_agent_recv_msg(GAbuf *buf)
             }
         }
         break;
+    case NS_EVENT_MSG_NOP:
+        break;
     default:
         debug_printf("%s: Unknown protocol id %d\n", __FUNCTION__,
                      buf->hdr.proto);
@@ -272,6 +274,7 @@ guest_agent_recv_event(void *opaque)
 }
 
 static int guest_agent_nop(void);
+static int initialized = 0;
 
 static void
 writelist_complete(void)
@@ -279,6 +282,7 @@ writelist_complete(void)
     WriteMsg *wm, *nwm;
     BOOL ret;
     DWORD bytes;
+    int disconnected = 0;
 
     critical_section_enter(&write_list_lock);
     LIST_FOREACH_SAFE(wm, &write_list, node, nwm) {
@@ -296,8 +300,7 @@ writelist_complete(void)
 		guest_agent_recv_msg(&wm->buf);
 		if (agent_seen)
                     agent_present = 0;
-                debug_printf("%s: guest agent disconnected\n", __FUNCTION__);
-                guest_agent_nop();
+                disconnected = 1;
                 break;
             default:
                 Wwarn("%s: GetOverLappedResult proto=%d", __FUNCTION__,
@@ -307,6 +310,7 @@ writelist_complete(void)
             if (bytes != wm->len)
                 debug_printf("%s: Short write %ld/%ld proto=%d\n", __FUNCTION__,
                              bytes, wm->len, wm->buf.hdr.proto);
+            disconnected = 0;
             if (!agent_present)
                 debug_printf("%s: guest agent connected\n", __FUNCTION__);
             agent_present = 1;
@@ -315,11 +319,19 @@ writelist_complete(void)
         free(wm);
     }
     critical_section_leave(&write_list_lock);
+
+    if (disconnected) {
+        debug_printf("%s: guest agent disconnected\n", __FUNCTION__);
+        guest_agent_nop();
+    }
 }
 
 static void
 guest_agent_xmit_event(void *opaque)
 {
+    if (!initialized)
+        return;
+
     ResetEvent(tx_event);
     writelist_complete();
 }
@@ -331,6 +343,9 @@ guest_agent_sendmsg(void *msg, size_t len, int dlo)
     DWORD bytes;
 
     WriteMsg *wm;
+
+    if (!initialized)
+        return -1;
 
     writelist_complete();
 
@@ -555,6 +570,8 @@ guest_agent_cleanup(void)
 {
     WriteMsg *wm, *nwm;
 
+    initialized = 0;
+
     critical_section_enter(&write_list_lock);
 
     LIST_FOREACH_SAFE(wm, &write_list, node, nwm) {
@@ -667,6 +684,8 @@ guest_agent_init(void)
                     guest_agent_save,
                     guest_agent_load,
                     NULL);
+
+    initialized = 1;
 
     guest_agent_nop();
 
