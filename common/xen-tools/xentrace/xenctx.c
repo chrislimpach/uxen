@@ -11,7 +11,7 @@
 /*
  * uXen changes:
  *
- * Copyright 2012-2015, Bromium, Inc.
+ * Copyright 2012-2016, Bromium, Inc.
  * Author: Julian Pidancet <julian@pidancet.net>
  * SPDX-License-Identifier: ISC
  *
@@ -52,6 +52,7 @@
 #include <uuid/uuid.h>
 #include <uxenctllib.h>
 #include <uxen_ioctl.h>
+#include <vm-savefile-simple.h>
 
 #if defined(_WIN32)
 DECLARE_PROGNAME;
@@ -100,7 +101,6 @@ static uint64_t kernel_start_os[][2] = {
 };
 
 static char *savefile = NULL;
-void do_save(xc_interface *, char *, uint8_t *, int);
 
 static int kernel_start_set = 0;
 static unsigned long long kernel_start = 0;
@@ -862,7 +862,7 @@ int main(int argc, char **argv)
     }
 
     if (xenctx.save)
-        do_save(xenctx.xc_handle, savefile, xenctx.uuid, xenctx.domid);
+        vmsavefile_save_simple(xenctx.xc_handle, savefile, xenctx.uuid, xenctx.domid);
 
     if (xenctx.all_vcpus)
         dump_all_vcpus();
