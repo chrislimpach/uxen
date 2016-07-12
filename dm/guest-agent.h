@@ -1,5 +1,5 @@
 /*
- * Copyright 2015, Bromium, Inc.
+ * Copyright 2015-2016, Bromium, Inc.
  * SPDX-License-Identifier: ISC
  */
 
@@ -15,7 +15,7 @@ int guest_agent_mouse_event(uint32_t x, uint32_t y, int32_t dv, int32_t dh,
                             uint32_t flags);
 int guest_agent_window_event(uint64_t hwnd, uint64_t message,
                              uint64_t wParam, uint64_t lParam);
-int guest_agent_set_time_zone(void *tzi);
+int guest_agent_set_dynamic_time_zone(void *dtzi);
 
 int guest_agent_cleanup(void);
 int guest_agent_init(void);
