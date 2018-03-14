@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017, Bromium, Inc.
+ * Copyright 2015-2018, Bromium, Inc.
  * SPDX-License-Identifier: ISC
  */
 
@@ -592,6 +592,9 @@ int
 guest_agent_cleanup(void)
 {
     WriteMsg *wm, *nwm;
+
+    if (!initialized)
+        return 0;
 
     initialized = 0;
 
